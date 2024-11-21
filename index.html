@@ -116,6 +116,16 @@
             text-align: right;
         }
 
+        /* Last Seen Styling */
+        .last-seen {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 14px;
+            color: #888;
+            font-weight: bold;
+        }
+
         /* Login Screen Styling */
         .login-container {
             display: flex;
@@ -155,7 +165,7 @@
 
 <!-- Login Screen -->
 <div class="login-container" id="loginScreen">
-    <h2>Hare Krishna Chat Login    </h2>
+    <h2>Hare Krishna Chat Login</h2>
     <input type="password" id="loginCode" placeholder="Enter access code...">
     <button id="loginButton">Login</button>
     <p>Hare Krishna ॐ हं हनुमते नमः</p>
@@ -170,6 +180,8 @@
         <input type="text" id="messageInput" placeholder="Type a message...">
         <button id="sendButton">→</button>
     </div>
+    <!-- Last Seen will be displayed here -->
+    <div id="lastSeen" class="last-seen">Last Seen: Never</div>
 </div>
 
 <script type="module">
@@ -207,6 +219,23 @@
     // Set sender name based on code
     let senderName = '';
 
+    // Update Last Seen in Firebase
+    function updateLastSeen() {
+        const lastSeenRef = ref(database, 'users/' + senderName + '/lastSeen');
+        const timestamp = new Date().toLocaleTimeString();
+        set(lastSeenRef, timestamp);
+    }
+
+    // Load Last Seen from Firebase
+    function loadLastSeen() {
+        const lastSeenRef = ref(database, 'users/' + senderName + '/lastSeen');
+        
+        onValue(lastSeenRef, (snapshot) => {
+            const lastSeen = snapshot.val();
+            document.getElementById("lastSeen").innerText = 'Last Seen: ' + (lastSeen || 'Never');
+        });
+    }
+
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
         const enteredCode = document.getElementById("loginCode").value.trim();
@@ -243,7 +272,7 @@
                 if (msg.sender === senderName) {
                     msgElement.classList.add('me');
                 } else {
-                    msgElement.classList.add('forever');
+                    msgElement.classList.add('friend');
                 }
 
                 const avatarElement = document.createElement('div');
@@ -257,7 +286,7 @@
 
                 const nameElement = document.createElement('div');
                 nameElement.classList.add('name');
-                nameElement.innerText = msg.sender === senderName ? senderName : 'forever';
+                nameElement.innerText = msg.sender === senderName ? senderName : 'friend';
                 msgElement.appendChild(nameElement);
 
                 const timeElement = document.createElement('div');
@@ -284,14 +313,17 @@
                 text: message,
                 time: timestamp
             });
+
             messageInput.value = '';  // Clear input box
+            updateLastSeen();  // Update last seen time on message send
         }
     });
 
-    // Load messages when chat screen is displayed
+    // Load messages and last seen when chat screen is displayed
     onAuthStateChanged(auth, (user) => {
         if (user) {
             loadMessages();
+            loadLastSeen();
         }
     });
 
