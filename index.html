@@ -229,10 +229,11 @@
     // Load Last Seen from Firebase
     function loadLastSeen() {
         const lastSeenRef = ref(database, 'users/' + senderName + '/lastSeen');
-        
+
         onValue(lastSeenRef, (snapshot) => {
             const lastSeen = snapshot.val();
-            document.getElementById("lastSeen").innerText = 'Last Seen: ' + (lastSeen || 'Never');
+            const lastSeenElement = document.getElementById("lastSeen");
+            lastSeenElement.innerText = 'Last Seen: ' + (lastSeen || 'Never');
         });
     }
 
@@ -259,55 +260,43 @@
     });
 
     function loadMessages() {
-        const chatBox = document.getElementById('chatBox');
         const messagesRef = ref(database, 'messages');
-        
         onValue(messagesRef, (snapshot) => {
-            chatBox.innerHTML = '';  // Clear existing messages
             const messages = snapshot.val();
-            for (const id in messages) {
-                const msg = messages[id];
-                const msgElement = document.createElement('div');
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML = ''; // Clear existing messages
+
+            for (let key in messages) {
+                const msg = messages[key];
+                const msgElement = document.createElement("div");
                 msgElement.classList.add('message');
                 if (msg.sender === senderName) {
                     msgElement.classList.add('me');
                 } else {
                     msgElement.classList.add('friend');
                 }
-
-                const avatarElement = document.createElement('div');
-                avatarElement.classList.add('avatar');
-                msgElement.appendChild(avatarElement);
-
-                const messageText = document.createElement('div');
-                messageText.classList.add('message-text');
-                messageText.innerText = msg.text;
-                msgElement.appendChild(messageText);
-
-                const nameElement = document.createElement('div');
-                nameElement.classList.add('name');
-                nameElement.innerText = msg.sender === senderName ? senderName : 'friend';
-                msgElement.appendChild(nameElement);
-
-                const timeElement = document.createElement('div');
-                timeElement.classList.add('time');
-                timeElement.innerText = msg.time;
-                msgElement.appendChild(timeElement);
-
+                msgElement.innerHTML = `
+                    <div class="message-text">
+                        <div class="name">${msg.sender}</div>
+                        <div>${msg.text}</div>
+                        <div class="time">${msg.time}</div>
+                    </div>
+                `;
                 chatBox.appendChild(msgElement);
             }
-            chatBox.scrollTop = chatBox.scrollHeight;  // Auto-scroll to bottom
         });
     }
 
-    document.getElementById('sendButton').addEventListener('click', () => {
-        const messageInput = document.getElementById('messageInput');
+    // Send message
+    document.getElementById("sendButton").addEventListener("click", () => {
+        const messageInput = document.getElementById("messageInput");
         const message = messageInput.value.trim();
         if (message) {
             const messagesRef = ref(database, 'messages');
             const newMessageRef = push(messagesRef);
             const timestamp = new Date().toLocaleTimeString();
 
+            // Store the new message in Firebase
             set(newMessageRef, {
                 sender: senderName,
                 text: message,
@@ -315,19 +304,19 @@
             });
 
             messageInput.value = '';  // Clear input box
-            updateLastSeen();  // Update last seen time on message send
+            updateLastSeen();  // Update last seen timestamp when sending message
         }
     });
 
-    // Load messages and last seen when chat screen is displayed
+    // Monitor authentication state
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            loadMessages();
-            loadLastSeen();
+            loadMessages();   // Load messages from Firebase
+            loadLastSeen();   // Load the last seen timestamp from Firebase
         }
     });
 
-    // Show login screen on load
+    // Initial call to show login screen
     showLoginScreen();
 </script>
 </body>
