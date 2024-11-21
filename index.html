@@ -16,13 +16,6 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            transition: background-color 0.3s;
-        }
-
-        /* Dark Mode */
-        body.dark-mode {
-            background-color: #333;
-            color: white;
         }
 
         .container {
@@ -34,11 +27,6 @@
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s;
-        }
-
-        .container.dark-mode {
-            background-color: #444;
         }
 
         .chat-box {
@@ -49,13 +37,7 @@
             background-size: cover;
             background-position: center;
             border-bottom: 1px solid #ddd;
-            transition: background-color 0.3s;
-            background-blur: 10px;
             position: relative;
-        }
-
-        .chat-box.dark-mode {
-            background-color: #555;
         }
 
         .input-box {
@@ -82,7 +64,6 @@
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            transition: background-color 0.3s;
         }
 
         .input-box button:hover {
@@ -117,18 +98,10 @@
         .message .message-text {
             max-width: 70%;
             padding: 10px;
-            background-color: rgba(255, 255, 255, 0.8); /* Transparent background for readability */
+            background-color: rgba(255, 255, 255, 0.8);
             border-radius: 20px;
             font-size: 16px;
             line-height: 1.4;
-        }
-
-        .message.friend .message-text {
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-
-        .message.me .message-text {
-            background-color: rgba(255, 255, 255, 0.8);
         }
 
         .message .name {
@@ -171,7 +144,6 @@
             border-radius: 5px;
             cursor: pointer;
             width: 260px;
-            transition: background-color 0.3s;
         }
 
         .login-container button:hover {
@@ -183,10 +155,10 @@
 
 <!-- Login Screen -->
 <div class="login-container" id="loginScreen">
-    <h2>Hare Krishna Chat Login</h2>
+    <h2>Hare Krishna Chat Login    </h2>
     <input type="password" id="loginCode" placeholder="Enter access code...">
     <button id="loginButton">Login</button>
-    <p>Hare Krishna ॐ हं हनुमते नमः </p>
+    <p>Hare Krishna ॐ हं हनुमते नमः</p>
 </div>
 
 <!-- Chat Screen -->
@@ -220,9 +192,6 @@
     const database = getDatabase(app);
     const auth = getAuth(app);
 
-    // Access code to unlock the chat
-    const validCode = "2114318";  // You can change this code to whatever you want
-
     // Show the login screen
     function showLoginScreen() {
         document.getElementById("loginScreen").style.display = "flex";
@@ -235,16 +204,25 @@
         document.getElementById("chatScreen").style.display = "flex";
     }
 
+    // Set sender name based on code
+    let senderName = '';
+
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
         const enteredCode = document.getElementById("loginCode").value.trim();
-        if (enteredCode === validCode) {
+        if (enteredCode === "2114318") {
+            senderName = "18";  // Sender details for code 'a'
             showChatScreen();
             signInAnonymously(auth)
                 .catch((error) => {
-                    const errorCode = error.code;
-                    const errorMessage = error.message;
-                    console.error("Error signing in:", errorCode, errorMessage);
+                    console.error("Error signing in:", error.code, error.message);
+                });
+        } else if (enteredCode === "1814321") {
+            senderName = "21";  // Sender details for code 'b'
+            showChatScreen();
+            signInAnonymously(auth)
+                .catch((error) => {
+                    console.error("Error signing in:", error.code, error.message);
                 });
         } else {
             alert("Incorrect code. Please try again.");
@@ -262,10 +240,10 @@
                 const msg = messages[id];
                 const msgElement = document.createElement('div');
                 msgElement.classList.add('message');
-                if (msg.sender === 'me') {
+                if (msg.sender === senderName) {
                     msgElement.classList.add('me');
                 } else {
-                    msgElement.classList.add('friend');
+                    msgElement.classList.add('forever');
                 }
 
                 const avatarElement = document.createElement('div');
@@ -279,7 +257,7 @@
 
                 const nameElement = document.createElement('div');
                 nameElement.classList.add('name');
-                nameElement.innerText = msg.sender === '1821' ? '1821' : '1821';
+                nameElement.innerText = msg.sender === senderName ? senderName : 'Friend';
                 msgElement.appendChild(nameElement);
 
                 const timeElement = document.createElement('div');
@@ -289,40 +267,36 @@
 
                 chatBox.appendChild(msgElement);
             }
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.scrollTop = chatBox.scrollHeight;  // Auto-scroll to bottom
         });
     }
 
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const messageText = input.value.trim();
-        if (messageText !== '') {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    const senderName = 'me';
-                    const timestamp = new Date().toLocaleTimeString();
-                    const messageData = {
-                        sender: senderName,
-                        text: messageText,
-                        time: timestamp
-                    };
+    document.getElementById('sendButton').addEventListener('click', () => {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        if (message) {
+            const messagesRef = ref(database, 'messages');
+            const newMessageRef = push(messagesRef);
+            const timestamp = new Date().toLocaleTimeString();
 
-                    const newMessageRef = push(ref(database, 'messages'));
-                    set(newMessageRef, messageData).then(() => {
-                        console.log("Message sent successfully!");
-                    }).catch((error) => {
-                        console.error("Error sending message:", error);
-                    });
-                    input.value = '';  // Clear input field
-                }
+            set(newMessageRef, {
+                sender: senderName,
+                text: message,
+                time: timestamp
             });
+            messageInput.value = '';  // Clear input box
         }
-    }
+    });
 
-    document.getElementById('sendButton').addEventListener('click', sendMessage);
+    // Load messages when chat screen is displayed
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loadMessages();
+        }
+    });
 
-    loadMessages();  // Load messages on page load
+    // Show login screen on load
+    showLoginScreen();
 </script>
-
 </body>
 </html>
