@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,7 +155,7 @@
 
 <!-- Login Screen -->
 <div class="login-container" id="loginScreen">
-    <h2>Hare Krishna Chat Login    </h2>
+    <h2>Hare Krishna Chat Login</h2>
     <input type="password" id="loginCode" placeholder="Enter access code...">
     <button id="loginButton">Login</button>
     <p>Hare Krishna ॐ हं हनुमते नमः</p>
@@ -211,8 +210,27 @@
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
         const enteredCode = document.getElementById("loginCode").value.trim();
+        const currentDate = new Date(); // Get current date and time
+        const formattedDate = currentDate.toLocaleString(); // Format the date and time as a readable string
+
         if (enteredCode === "2114318") {
             senderName = "18";  // Sender details for code 'a'
+            console.log(`User 18 logged in at: ${formattedDate}`); // Log login time for user 18
+
+            // Store login data in Firebase Realtime Database
+            const loginsRef = ref(database, 'logins');
+            const newLoginRef = push(loginsRef);
+            set(newLoginRef, {
+                userId: "18",
+                loginTime: formattedDate
+            })
+            .then(() => {
+                console.log("Login data stored successfully in Firebase!");
+            })
+            .catch((error) => {
+                console.error("Error storing login data: ", error);
+            });
+
             showChatScreen();
             signInAnonymously(auth)
                 .catch((error) => {
@@ -220,6 +238,22 @@
                 });
         } else if (enteredCode === "1814321") {
             senderName = "21";  // Sender details for code 'b'
+            console.log(`User 21 logged in at: ${formattedDate}`); // Log login time for user 21
+
+            // Store login data in Firebase Realtime Database
+            const loginsRef = ref(database, 'logins');
+            const newLoginRef = push(loginsRef);
+            set(newLoginRef, {
+                userId: "21",
+                loginTime: formattedDate
+            })
+            .then(() => {
+                console.log("Login data stored successfully in Firebase!");
+            })
+            .catch((error) => {
+                console.error("Error storing login data: ", error);
+            });
+
             showChatScreen();
             signInAnonymously(auth)
                 .catch((error) => {
@@ -236,68 +270,24 @@
         
         onValue(messagesRef, (snapshot) => {
             chatBox.innerHTML = '';  // Clear existing messages
-            const messages = snapshot.val();
-            for (const id in messages) {
-                const msg = messages[id];
-                const msgElement = document.createElement('div');
-                msgElement.classList.add('message');
-                if (msg.sender === senderName) {
-                    msgElement.classList.add('me');
-                } else {
-                    msgElement.classList.add('forever');
-                }
-
-                const avatarElement = document.createElement('div');
-                avatarElement.classList.add('avatar');
-                msgElement.appendChild(avatarElement);
-
-                const messageText = document.createElement('div');
-                messageText.classList.add('message-text');
-                messageText.innerText = msg.text;
-                msgElement.appendChild(messageText);
-
-                const nameElement = document.createElement('div');
-                nameElement.classList.add('name');
-                nameElement.innerText = msg.sender === senderName ? senderName : 'forever';
-                msgElement.appendChild(nameElement);
-
-                const timeElement = document.createElement('div');
-                timeElement.classList.add('time');
-                timeElement.innerText = msg.time;
-                msgElement.appendChild(timeElement);
-
-                chatBox.appendChild(msgElement);
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;  // Auto-scroll to bottom
+            snapshot.forEach(childSnapshot => {
+                const messageData = childSnapshot.val();
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'Forever');
+                messageElement.innerHTML = `
+                    <div class="avatar"></div>
+                    <div class="message-text">
+                        <div class="name">${messageData.sender}</div>
+                        <div class="time">${messageData.time}</div>
+                        <div class="text">${messageData.text}</div>
+                    </div>
+                `;
+                chatBox.appendChild(messageElement);
+            });
         });
     }
 
-    document.getElementById('sendButton').addEventListener('click', () => {
-        const messageInput = document.getElementById('messageInput');
-        const message = messageInput.value.trim();
-        if (message) {
-            const messagesRef = ref(database, 'messages');
-            const newMessageRef = push(messagesRef);
-            const timestamp = new Date().toLocaleTimeString();
-
-            set(newMessageRef, {
-                sender: senderName,
-                text: message,
-                time: timestamp
-            });
-            messageInput.value = '';  // Clear input box
-        }
-    });
-
-    // Load messages when chat screen is displayed
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            loadMessages();
-        }
-    });
-
-    // Show login screen on load
-    showLoginScreen();
+    loadMessages();  // Initially load messages
 </script>
 </body>
 </html>
