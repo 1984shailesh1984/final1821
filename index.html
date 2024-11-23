@@ -264,18 +264,46 @@
         }
     });
 
+    // Message sending functionality
+    document.getElementById("sendButton").addEventListener("click", () => {
+        const messageText = document.getElementById("messageInput").value.trim();
+        if (messageText) {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleString();
+            const messagesRef = ref(database, 'messages');
+            const newMessageRef = push(messagesRef);
+
+            set(newMessageRef, {
+                sender: senderName,
+                text: messageText,
+                time: formattedDate
+            })
+            .then(() => {
+                console.log("Message sent!");
+                document.getElementById("messageInput").value = ""; // Clear input field
+            })
+            .catch((error) => {
+                console.error("Error sending message:", error);
+            });
+        } else {
+            console.log("Message input is empty");
+        }
+    });
+
+    // Loading and displaying messages
     function loadMessages() {
         const chatBox = document.getElementById('chatBox');
         const messagesRef = ref(database, 'messages');
-        
+
         onValue(messagesRef, (snapshot) => {
             chatBox.innerHTML = '';  // Clear existing messages
+
             snapshot.forEach(childSnapshot => {
                 const messageData = childSnapshot.val();
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'Forever');
                 messageElement.innerHTML = `
-                    <div class="avatar"></div>
+                    <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
                     <div class="message-text">
                         <div class="name">${messageData.sender}</div>
                         <div class="time">${messageData.time}</div>
@@ -287,7 +315,11 @@
         });
     }
 
-    loadMessages();  // Initially load messages
+    setInterval(loadMessages, 3000); // Load messages every 3 seconds
+
+    // Show login screen initially
+    showLoginScreen();
 </script>
+
 </body>
 </html>
