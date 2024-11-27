@@ -120,6 +120,7 @@
             font-size: 12px;
             color: #888;
             margin-top: 5px;
+            font-style: italic;
         }
 
         /* Login Screen Styling */
@@ -264,11 +265,11 @@
                     console.error("Error signing in:", error.code, error.message);
                 });
         } else {
-            alert("Incorrect code. Please try again.");
+            alert("Invalid access code!");
         }
     });
 
-    // Message sending functionality
+    // Send message functionality
     document.getElementById("sendButton").addEventListener("click", () => {
         const messageText = document.getElementById("messageInput").value.trim();
         const currentDate = new Date();
