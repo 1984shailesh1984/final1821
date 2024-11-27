@@ -119,7 +119,7 @@
         .message .last-seen {
             font-size: 12px;
             color: #888;
-            margin-left: 5px;
+            margin-top: 5px;
         }
 
         /* Login Screen Styling */
@@ -223,24 +223,17 @@
             senderName = "18";  // Sender details for code 'a'
             console.log(`User 18 logged in at: ${formattedDate}`); // Log login time for user 18
 
-            // Store login data in Firebase Realtime Database
-            const loginsRef = ref(database, 'logins');
-            const newLoginRef = push(loginsRef);
-            set(newLoginRef, {
-                userId: "18",
-                loginTime: formattedDate
+            // Store login and last seen data in Firebase Realtime Database
+            const usersRef = ref(database, 'users/' + senderName);
+            set(usersRef, {
+                userId: senderName,
+                lastSeen: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully in Firebase!");
+                console.log("Login and last seen data stored successfully in Firebase!");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
-            });
-
-            // Set last seen time in Firebase
-            const userRef = ref(database, 'users/' + senderName);
-            set(userRef, {
-                lastSeen: formattedDate
             });
 
             showChatScreen();
@@ -252,24 +245,17 @@
             senderName = "21";  // Sender details for code 'b'
             console.log(`User 21 logged in at: ${formattedDate}`); // Log login time for user 21
 
-            // Store login data in Firebase Realtime Database
-            const loginsRef = ref(database, 'logins');
-            const newLoginRef = push(loginsRef);
-            set(newLoginRef, {
-                userId: "21",
-                loginTime: formattedDate
+            // Store login and last seen data in Firebase Realtime Database
+            const usersRef = ref(database, 'users/' + senderName);
+            set(usersRef, {
+                userId: senderName,
+                lastSeen: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully in Firebase!");
+                console.log("Login and last seen data stored successfully in Firebase!");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
-            });
-
-            // Set last seen time in Firebase
-            const userRef = ref(database, 'users/' + senderName);
-            set(userRef, {
-                lastSeen: formattedDate
             });
 
             showChatScreen();
@@ -282,11 +268,52 @@
         }
     });
 
-    // Loading and displaying messages with Last Seen
+    // Message sending functionality
+    document.getElementById("sendButton").addEventListener("click", () => {
+        const messageText = document.getElementById("messageInput").value.trim();
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleString();
+
+        if (messageText) {
+            const messagesRef = ref(database, 'messages');
+            const newMessageRef = push(messagesRef);
+            set(newMessageRef, {
+                sender: senderName,
+                text: messageText,
+                time: formattedDate
+            })
+            .then(() => {
+                console.log("Message sent!");
+
+                // Update the last seen timestamp for the current user
+                const usersRef = ref(database, 'users/' + senderName);
+                set(usersRef, {
+                    userId: senderName,
+                    lastSeen: formattedDate
+                })
+                .then(() => {
+                    console.log("Last seen updated!");
+                })
+                .catch((error) => {
+                    console.error("Error updating last seen: ", error);
+                });
+
+                document.getElementById("messageInput").value = ""; // Clear input field
+            })
+            .catch((error) => {
+                console.error("Error sending message:", error);
+            });
+        } else {
+            console.log("Message input is empty");
+        }
+    });
+
+    // Loading and displaying messages along with last seen info
     function loadMessages() {
         const chatBox = document.getElementById('chatBox');
         const messagesRef = ref(database, 'messages');
         const usersRef = ref(database, 'users');
+
         onValue(messagesRef, (snapshot) => {
             chatBox.innerHTML = '';  // Clear existing messages
             snapshot.forEach(childSnapshot => {
@@ -294,45 +321,31 @@
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'friend');
 
-                // Retrieve the last seen time for the sender
-                onValue(ref(usersRef, messageData.sender), (userSnapshot) => {
-                    const userData = userSnapshot.val();
-                    const lastSeen = userData ? userData.lastSeen : "Unknown";
-
-                    messageElement.innerHTML = `
-                        <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
-                        <div class="message-text">
-                            <div class="name">${messageData.sender} <span class="last-seen">Last seen: ${lastSeen}</span></div>
-                            <div class="time">${messageData.time}</div>
-                            <div class="text">${messageData.text}</div>
-                        </div>
-                    `;
-                    chatBox.appendChild(messageElement);
+                // Retrieve last seen time for the sender
+                onValue(usersRef, (userSnapshot) => {
+                    userSnapshot.forEach(userChildSnapshot => {
+                        const userData = userChildSnapshot.val();
+                        if (userData.userId === messageData.sender) {
+                            messageElement.innerHTML = `
+                                <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
+                                <div class="message-text">
+                                    <div class="name">${messageData.sender}</div>
+                                    <div class="time">${messageData.time}</div>
+                                    <div class="text">${messageData.text}</div>
+                                    <div class="last-seen">Last seen: ${userData.lastSeen}</div>
+                                </div>
+                            `;
+                        }
+                    });
                 });
+
+                chatBox.appendChild(messageElement);
             });
         });
     }
 
     setInterval(loadMessages, 3000); // Load messages every 3 seconds
-
-    // Send message functionality
-    document.getElementById("sendButton").addEventListener("click", () => {
-        const messageText = document.getElementById("messageInput").value.trim();
-        if (messageText) {
-            const currentDate = new Date();
-            const time = currentDate.toLocaleTimeString();
-            const newMessageRef = push(ref(database, 'messages'));
-            set(newMessageRef, {
-                sender: senderName,
-                text: messageText,
-                time: time
-            })
-            .then(() => {
-                document.getElementById("messageInput").value = '';
-                loadMessages();
-            });
-        }
-    });
 </script>
+
 </body>
 </html>
