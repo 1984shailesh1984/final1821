@@ -29,6 +29,16 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
+        /* Last Seen Banner Styling */
+        .last-seen-banner {
+            background-color: #075e54; /* WhatsApp green */
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
         .chat-box {
             flex: 1;
             overflow-y: auto;
@@ -170,6 +180,9 @@
 
 <!-- Chat Screen -->
 <div class="container" id="chatScreen" style="display: none;">
+    <div id="lastSeenBanner" class="last-seen-banner" style="display: none;">
+        <!-- Last Seen message will be displayed here -->
+    </div>
     <div class="chat-box" id="chatBox">
         <!-- Messages will be displayed here -->
     </div>
@@ -213,6 +226,7 @@
 
     // Set sender name based on code
     let senderName = '';
+    let lastSeenTime = '';
 
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
@@ -237,27 +251,10 @@
                 console.error("Error storing login data: ", error);
             });
 
-            showChatScreen();
-            signInAnonymously(auth)
-                .catch((error) => {
-                    console.error("Error signing in:", error.code, error.message);
-                });
-        } else if (enteredCode === "1814321") {
-            senderName = "21";  // Sender details for code 'b'
-            console.log(`User 21 logged in at: ${formattedDate}`); // Log login time for user 21
-
-            // Store login and last seen data in Firebase Realtime Database
-            const usersRef = ref(database, 'users/' + senderName);
-            set(usersRef, {
-                userId: senderName,
-                lastSeen: formattedDate
-            })
-            .then(() => {
-                console.log("Login and last seen data stored successfully in Firebase!");
-            })
-            .catch((error) => {
-                console.error("Error storing login data: ", error);
-            });
+            // Set last seen banner
+            lastSeenTime = formattedDate;
+            document.getElementById("lastSeenBanner").innerHTML = `User ${senderName} was last seen at ${lastSeenTime}`;
+            document.getElementById("lastSeenBanner").style.display = "block";
 
             showChatScreen();
             signInAnonymously(auth)
@@ -285,20 +282,6 @@
             })
             .then(() => {
                 console.log("Message sent!");
-
-                // Update the last seen timestamp for the current user
-                const usersRef = ref(database, 'users/' + senderName);
-                set(usersRef, {
-                    userId: senderName,
-                    lastSeen: formattedDate
-                })
-                .then(() => {
-                    console.log("Last seen updated!");
-                })
-                .catch((error) => {
-                    console.error("Error updating last seen: ", error);
-                });
-
                 document.getElementById("messageInput").value = ""; // Clear input field
             })
             .catch((error) => {
@@ -309,11 +292,10 @@
         }
     });
 
-    // Loading and displaying messages along with last seen info
+    // Loading and displaying messages
     function loadMessages() {
         const chatBox = document.getElementById('chatBox');
         const messagesRef = ref(database, 'messages');
-        const usersRef = ref(database, 'users');
 
         onValue(messagesRef, (snapshot) => {
             chatBox.innerHTML = '';  // Clear existing messages
@@ -322,23 +304,14 @@
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'friend');
 
-                // Retrieve last seen time for the sender
-                onValue(usersRef, (userSnapshot) => {
-                    userSnapshot.forEach(userChildSnapshot => {
-                        const userData = userChildSnapshot.val();
-                        if (userData.userId === messageData.sender) {
-                            messageElement.innerHTML = `
-                                <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
-                                <div class="message-text">
-                                    <div class="name">${messageData.sender}</div>
-                                    <div class="time">${messageData.time}</div>
-                                    <div class="text">${messageData.text}</div>
-                                    <div class="last-seen">Last seen: ${userData.lastSeen}</div>
-                                </div>
-                            `;
-                        }
-                    });
-                });
+                messageElement.innerHTML = `
+                    <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
+                    <div class="message-text">
+                        <div class="name">${messageData.sender}</div>
+                        <div class="time">${messageData.time}</div>
+                        <div class="text">${messageData.text}</div>
+                    </div>
+                `;
 
                 chatBox.appendChild(messageElement);
             });
