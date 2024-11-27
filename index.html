@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hare Krishna</title>
+    <title>Hare Krishna Chat</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
         /* Basic Styling */
@@ -212,6 +212,10 @@
     const database = getDatabase(app);
     const auth = getAuth(app);
 
+    // Store login and last seen time
+    let currentUser = '';
+    let lastSeenTime = '';
+
     // Show the login screen
     function showLoginScreen() {
         document.getElementById("loginScreen").style.display = "flex";
@@ -224,46 +228,47 @@
         document.getElementById("chatScreen").style.display = "flex";
     }
 
-    // Set sender name based on code
-    let senderName = '';
-    let lastSeenTime = '';
-
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
         const enteredCode = document.getElementById("loginCode").value.trim();
-        const currentDate = new Date(); // Get current date and time
-        const formattedDate = currentDate.toLocaleString(); // Format the date and time as a readable string
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleString(); // Format date and time
 
-        if (enteredCode === "2114318") {
-            senderName = "18";  // Sender details for code 'a'
-            console.log(`User 18 logged in at: ${formattedDate}`); // Log login time for user 18
-
-            // Store login and last seen data in Firebase Realtime Database
-            const usersRef = ref(database, 'users/' + senderName);
-            set(usersRef, {
-                userId: senderName,
-                lastSeen: formattedDate
-            })
-            .then(() => {
-                console.log("Login and last seen data stored successfully in Firebase!");
-            })
-            .catch((error) => {
-                console.error("Error storing login data: ", error);
-            });
-
-            // Set last seen banner
+        if (enteredCode === "1814321" || enteredCode === "21") {
+            currentUser = "21";
             lastSeenTime = formattedDate;
-            document.getElementById("lastSeenBanner").innerHTML = `User ${senderName} was last seen at ${lastSeenTime}`;
-            document.getElementById("lastSeenBanner").style.display = "block";
-
-            showChatScreen();
-            signInAnonymously(auth)
-                .catch((error) => {
-                    console.error("Error signing in:", error.code, error.message);
-                });
+            console.log(`User 21 logged in at: ${formattedDate}`);
+        } else if (enteredCode === "2114318") {
+            currentUser = "18";
+            lastSeenTime = formattedDate;
+            console.log(`User 18 logged in at: ${formattedDate}`);
         } else {
             alert("Invalid access code!");
+            return;
         }
+
+        // Store user info in Firebase
+        const usersRef = ref(database, 'users/' + currentUser);
+        set(usersRef, {
+            userId: currentUser,
+            lastSeen: lastSeenTime
+        })
+        .then(() => {
+            console.log("User data stored successfully in Firebase!");
+        })
+        .catch((error) => {
+            console.error("Error storing user data: ", error);
+        });
+
+        // Set last seen banner for current user
+        document.getElementById("lastSeenBanner").innerHTML = `User ${currentUser} was last seen at ${lastSeenTime}`;
+        document.getElementById("lastSeenBanner").style.display = "block";
+
+        showChatScreen();
+        signInAnonymously(auth)
+            .catch((error) => {
+                console.error("Error signing in:", error.code, error.message);
+            });
     });
 
     // Send message functionality
@@ -276,7 +281,7 @@
             const messagesRef = ref(database, 'messages');
             const newMessageRef = push(messagesRef);
             set(newMessageRef, {
-                sender: senderName,
+                sender: currentUser,
                 text: messageText,
                 time: formattedDate
             })
@@ -302,10 +307,10 @@
             snapshot.forEach(childSnapshot => {
                 const messageData = childSnapshot.val();
                 const messageElement = document.createElement('div');
-                messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'friend');
+                messageElement.classList.add('message', messageData.sender === currentUser ? 'me' : 'friend');
 
                 messageElement.innerHTML = `
-                    <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
+                    <div class="avatar" style="background-image: url('${messageData.sender === "21" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
                     <div class="message-text">
                         <div class="name">${messageData.sender}</div>
                         <div class="time">${messageData.time}</div>
