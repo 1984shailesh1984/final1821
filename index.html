@@ -99,7 +99,6 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-image: url('https://i.ibb.co/kmkZjsW/Untitled-design-3.png');
             background-size: cover;
             background-position: center;
             margin-right: 10px;
@@ -215,6 +214,7 @@
     // Store login and last seen time
     let currentUser = '';
     let lastSeenTime = '';
+    let avatarUrl = '';
 
     // Show the login screen
     function showLoginScreen() {
@@ -234,12 +234,14 @@
         const currentDate = new Date();
         const formattedDate = currentDate.toLocaleString(); // Format date and time
 
-        if (enteredCode === "1814321" || enteredCode === "21") {
+        if (enteredCode === "1814321") {
             currentUser = "21";
+            avatarUrl = "https://i.ibb.co/0s9nJzh/product-jpeg.jpg";  // Avatar for User 21
             lastSeenTime = formattedDate;
             console.log(`User 21 logged in at: ${formattedDate}`);
         } else if (enteredCode === "2114318") {
             currentUser = "18";
+            avatarUrl = "https://i.ibb.co/kmkZjsW/Untitled-design-3.png";  // Avatar for User 18
             lastSeenTime = formattedDate;
             console.log(`User 18 logged in at: ${formattedDate}`);
         } else {
@@ -310,7 +312,7 @@
                 messageElement.classList.add('message', messageData.sender === currentUser ? 'me' : 'friend');
 
                 messageElement.innerHTML = `
-                    <div class="avatar" style="background-image: url('${messageData.sender === "21" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
+                    <div class="avatar" style="background-image: url('${messageData.sender === "21" ? "https://i.ibb.co/0s9nJzh/product-jpeg.jpg" : "https://i.ibb.co/kmkZjsW/Untitled-design-3.png"}');"></div>
                     <div class="message-text">
                         <div class="name">${messageData.sender}</div>
                         <div class="time">${messageData.time}</div>
