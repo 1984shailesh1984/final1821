@@ -16,11 +16,10 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            overflow: hidden;
         }
 
         .container {
-            width: 100%;
+            width: 90%;
             max-width: 500px;
             height: 600px;
             display: flex;
@@ -28,7 +27,6 @@
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
         }
 
         .chat-box {
@@ -38,9 +36,8 @@
             background-image: url('https://i.ibb.co/0s9nJzh/product-jpeg.jpg');
             background-size: cover;
             background-position: center;
+            border-bottom: 1px solid #ddd;
             position: relative;
-            display: flex;
-            flex-direction: column;
         }
 
         .input-box {
@@ -119,15 +116,6 @@
             text-align: right;
         }
 
-        /* Last Seen Bar */
-        #lastSeen {
-            background-color: #25D366;
-            color: white;
-            padding: 8px 0;
-            text-align: center;
-            font-size: 14px;
-        }
-
         /* Login Screen Styling */
         .login-container {
             display: flex;
@@ -161,6 +149,14 @@
         .login-container button:hover {
             background-color: #128C7E;
         }
+
+        /* Last Seen Text */
+        #lastSeen {
+            font-size: 14px;
+            color: #888;
+            margin-top: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -176,14 +172,14 @@
 <!-- Chat Screen -->
 <div class="container" id="chatScreen" style="display: none;">
     <div class="chat-box" id="chatBox">
-        <!-- Last Seen Bar -->
-        <div id="lastSeen">Last seen: Loading...</div>
         <!-- Messages will be displayed here -->
     </div>
     <div class="input-box">
         <input type="text" id="messageInput" placeholder="Type a message...">
         <button id="sendButton">→</button>
     </div>
+    <!-- Display Last Seen -->
+    <div id="lastSeen"></div>
 </div>
 
 <script type="module">
@@ -212,7 +208,7 @@
     function updateLastSeen(userId) {
         const currentDate = new Date();
         const formattedDate = currentDate.toLocaleString();
-        const lastSeenRef = ref(database, `users/${userId}/lastSeen`);
+        const lastSeenRef = ref(database, users/${userId}/lastSeen);
 
         set(lastSeenRef, formattedDate)
             .then(() => {
@@ -226,12 +222,12 @@
     // Load last seen for the other user
     function loadLastSeen() {
         const otherUser = senderName === "18" ? "21" : "18";
-        const lastSeenRef = ref(database, `users/${otherUser}/lastSeen`);
+        const lastSeenRef = ref(database, users/${otherUser}/lastSeen);
         
         onValue(lastSeenRef, (snapshot) => {
             const lastSeenTime = snapshot.val();
             if (lastSeenTime) {
-                document.getElementById("lastSeen").textContent = `Last seen: ${lastSeenTime}`;
+                document.getElementById("lastSeen").textContent = Last seen: ${lastSeenTime};
             } else {
                 document.getElementById("lastSeen").textContent = "Last seen data is unavailable.";
             }
@@ -241,73 +237,17 @@
         });
     }
 
-    // Load chat messages from Firebase
-    function loadMessages() {
-        const messagesRef = ref(database, 'messages');
-        
-        onValue(messagesRef, (snapshot) => {
-            const messagesContainer = document.getElementById('chatBox');
-            messagesContainer.innerHTML = ''; // Clear current messages
+    // Login functionality
+    document.getElementById("loginButton").addEventListener("click", () => {
+        const enteredCode = document.getElementById("loginCode").value.trim();
+        const currentDate = new Date(); // Get current date and time
+        const formattedDate = currentDate.toLocaleString(); // Format the date and time as a readable string
 
-            snapshot.forEach((childSnapshot) => {
-                const message = childSnapshot.val();
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('message', message.senderId === senderName ? 'me' : 'friend');
+        if (enteredCode === "2114318") {
+            senderName = "18";  // Sender details for code 'a'
+            console.log(User 18 logged in at: ${formattedDate}); // Log login time for user 18
 
-                const avatar = document.createElement('div');
-                avatar.classList.add('avatar');
-                messageElement.appendChild(avatar);
-
-                const messageText = document.createElement('div');
-                messageText.classList.add('message-text');
-                messageText.innerHTML = `<div class="name">${message.senderName}</div><div>${message.text}</div><div class="time">${message.time}</div>`;
-                messageElement.appendChild(messageText);
-
-                messagesContainer.appendChild(messageElement);
-            });
-
-            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the latest message
-        });
-    }
-
-    // Send message to Firebase
-    function sendMessage() {
-        const messageInput = document.getElementById('messageInput');
-        const messageText = messageInput.value.trim();
-        
-        if (messageText !== '') {
-            const currentDate = new Date();
-            const formattedDate = currentDate.toLocaleString();
-
-            const messagesRef = ref(database, 'messages');
-            const newMessageRef = push(messagesRef);
-
-            set(newMessageRef, {
-                senderId: senderName,
-                senderName: senderName === '18' ? 'User 18' : 'User 21',
-                text: messageText,
-                time: formattedDate
-            })
-            .then(() => {
-                console.log("Message sent.");
-                messageInput.value = ''; // Clear the input after sending
-            })
-            .catch((error) => {
-                console.error("Error sending message:", error);
-            });
-        }
-    }
-
-    // Handle login
-    document.getElementById('loginButton').addEventListener('click', () => {
-        const enteredCode = document.getElementById('loginCode').value;
-        const currentDate = new Date();
-        const formattedDate = currentDate.toLocaleString();
-        
-        if (enteredCode === "1814320") {
-            senderName = "18";
-            console.log(`User 18 logged in at: ${formattedDate}`);
-
+            // Store login data in Firebase Realtime Database
             const loginsRef = ref(database, 'logins');
             const newLoginRef = push(loginsRef);
             set(newLoginRef, {
@@ -315,21 +255,23 @@
                 loginTime: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully.");
+                console.log("Login data stored successfully in Firebase!");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
             });
 
-            updateLastSeen('18');
+            updateLastSeen('18'); // Update last seen for user 18
             showChatScreen();
-            signInAnonymously(auth).catch((error) => {
-                console.error("Error signing in:", error.code, error.message);
-            });
+            signInAnonymously(auth)
+                .catch((error) => {
+                    console.error("Error signing in:", error.code, error.message);
+                });
         } else if (enteredCode === "1814321") {
-            senderName = "21";
-            console.log(`User 21 logged in at: ${formattedDate}`);
+            senderName = "21";  // Sender details for code 'b'
+            console.log(User 21 logged in at: ${formattedDate}); // Log login time for user 21
 
+            // Store login data in Firebase Realtime Database
             const loginsRef = ref(database, 'logins');
             const newLoginRef = push(loginsRef);
             set(newLoginRef, {
@@ -337,17 +279,18 @@
                 loginTime: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully.");
+                console.log("Login data stored successfully in Firebase!");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
             });
 
-            updateLastSeen('21');
+            updateLastSeen('21'); // Update last seen for user 21
             showChatScreen();
-            signInAnonymously(auth).catch((error) => {
-                console.error("Error signing in:", error.code, error.message);
-            });
+            signInAnonymously(auth)
+                .catch((error) => {
+                    console.error("Error signing in:", error.code, error.message);
+                });
         } else {
             alert("Incorrect code. Please try again.");
         }
@@ -357,9 +300,9 @@
     function showChatScreen() {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("chatScreen").style.display = "flex";
-
+        
+        // Load the last seen time after login
         loadLastSeen();
-        loadMessages();
     }
 
     // Show login screen initially
@@ -369,11 +312,7 @@
     }
 
     showLoginScreen();
-
-    // Handle send message button click
-    document.getElementById('sendButton').addEventListener('click', sendMessage);
-
 </script>
 
 </body>
-</html>
+</html> 
