@@ -208,7 +208,7 @@
     function updateLastSeen(userId) {
         const currentDate = new Date();
         const formattedDate = currentDate.toLocaleString();
-        const lastSeenRef = ref(database, users/${userId}/lastSeen);
+        const lastSeenRef = ref(database, `users/${userId}/lastSeen`);
 
         set(lastSeenRef, formattedDate)
             .then(() => {
@@ -222,12 +222,12 @@
     // Load last seen for the other user
     function loadLastSeen() {
         const otherUser = senderName === "18" ? "21" : "18";
-        const lastSeenRef = ref(database, users/${otherUser}/lastSeen);
+        const lastSeenRef = ref(database, `users/${otherUser}/lastSeen`);
         
         onValue(lastSeenRef, (snapshot) => {
             const lastSeenTime = snapshot.val();
             if (lastSeenTime) {
-                document.getElementById("lastSeen").textContent = Last seen: ${lastSeenTime};
+                document.getElementById("lastSeen").textContent = `Last seen: ${lastSeenTime}`;
             } else {
                 document.getElementById("lastSeen").textContent = "Last seen data is unavailable.";
             }
@@ -237,6 +237,59 @@
         });
     }
 
+    // Load Messages from Firebase and Display in the Chat Box
+    function loadMessages() {
+        const messagesRef = ref(database, 'messages/');
+        
+        onValue(messagesRef, (snapshot) => {
+            const messages = snapshot.val();
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML = ''; // Clear current messages in chat
+
+            // Loop through each message and display it
+            for (const key in messages) {
+                const message = messages[key];
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add(message.sender === senderName ? 'me' : 'friend');
+                
+                messageElement.innerHTML = `
+                    <div class="avatar"></div>
+                    <div class="message-text">
+                        <div class="name">${message.sender}</div>
+                        <div>${message.text}</div>
+                        <div class="time">${message.time}</div>
+                    </div>
+                `;
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+            }
+        }, (error) => {
+            console.error("Error loading messages:", error);
+        });
+    }
+
+    // Send message to Firebase
+    document.getElementById("sendButton").addEventListener("click", () => {
+        const messageText = document.getElementById("messageInput").value.trim();
+        if (messageText) {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleTimeString();
+            const messagesRef = ref(database, 'messages/');
+            const newMessageRef = push(messagesRef);
+            
+            set(newMessageRef, {
+                sender: senderName,
+                text: messageText,
+                time: formattedDate
+            }).then(() => {
+                document.getElementById("messageInput").value = ''; // Clear the input box
+            }).catch((error) => {
+                console.error("Error sending message:", error);
+            });
+        }
+    });
+
     // Login functionality
     document.getElementById("loginButton").addEventListener("click", () => {
         const enteredCode = document.getElementById("loginCode").value.trim();
@@ -245,7 +298,7 @@
 
         if (enteredCode === "2114318") {
             senderName = "18";  // Sender details for code 'a'
-            console.log(User 18 logged in at: ${formattedDate}); // Log login time for user 18
+            console.log(`User 18 logged in at: ${formattedDate}`); // Log login time for user 18
 
             // Store login data in Firebase Realtime Database
             const loginsRef = ref(database, 'logins');
@@ -269,7 +322,7 @@
                 });
         } else if (enteredCode === "1814321") {
             senderName = "21";  // Sender details for code 'b'
-            console.log(User 21 logged in at: ${formattedDate}); // Log login time for user 21
+            console.log(`User 21 logged in at: ${formattedDate}`); // Log login time for user 21
 
             // Store login data in Firebase Realtime Database
             const loginsRef = ref(database, 'logins');
@@ -296,13 +349,14 @@
         }
     });
 
-    // Show the chat screen
+    // Show the chat screen after login
     function showChatScreen() {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("chatScreen").style.display = "flex";
         
         // Load the last seen time after login
         loadLastSeen();
+        loadMessages(); // Load previous messages when entering the chat
     }
 
     // Show login screen initially
@@ -311,8 +365,8 @@
         document.getElementById("chatScreen").style.display = "none";
     }
 
-    showLoginScreen();
+    showLoginScreen(); // Show login screen on page load
 </script>
 
 </body>
-</html> 
+</html>
