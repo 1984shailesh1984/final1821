@@ -116,6 +116,12 @@
             text-align: right;
         }
 
+        .message .last-seen {
+            font-size: 12px;
+            color: #888;
+            margin-left: 5px;
+        }
+
         /* Login Screen Styling */
         .login-container {
             display: flex;
@@ -231,6 +237,12 @@
                 console.error("Error storing login data: ", error);
             });
 
+            // Set last seen time in Firebase
+            const userRef = ref(database, 'users/' + senderName);
+            set(userRef, {
+                lastSeen: formattedDate
+            });
+
             showChatScreen();
             signInAnonymously(auth)
                 .catch((error) => {
@@ -254,6 +266,12 @@
                 console.error("Error storing login data: ", error);
             });
 
+            // Set last seen time in Firebase
+            const userRef = ref(database, 'users/' + senderName);
+            set(userRef, {
+                lastSeen: formattedDate
+            });
+
             showChatScreen();
             signInAnonymously(auth)
                 .catch((error) => {
@@ -264,56 +282,57 @@
         }
     });
 
-    // Message sending functionality
-    document.getElementById("sendButton").addEventListener("click", () => {
-        const messageText = document.getElementById("messageInput").value.trim();
-        if (messageText) {
-            const currentDate = new Date();
-            const formattedDate = currentDate.toLocaleString();
-            const messagesRef = ref(database, 'messages');
-            const newMessageRef = push(messagesRef);
-            set(newMessageRef, {
-                sender: senderName,
-                text: messageText,
-                time: formattedDate
-            })
-            .then(() => {
-                console.log("Message sent!");
-                document.getElementById("messageInput").value = ""; // Clear input field
-            })
-            .catch((error) => {
-                console.error("Error sending message:", error);
-            });
-        } else {
-            console.log("Message input is empty");
-        }
-    });
-    // Loading and displaying messages
+    // Loading and displaying messages with Last Seen
     function loadMessages() {
         const chatBox = document.getElementById('chatBox');
         const messagesRef = ref(database, 'messages');
+        const usersRef = ref(database, 'users');
         onValue(messagesRef, (snapshot) => {
             chatBox.innerHTML = '';  // Clear existing messages
             snapshot.forEach(childSnapshot => {
                 const messageData = childSnapshot.val();
                 const messageElement = document.createElement('div');
-                messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'Forever');
-                messageElement.innerHTML = `
-                    <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
-                    <div class="message-text">
-                        <div class="name">${messageData.sender}</div>
-                        <div class="time">${messageData.time}</div>
-                        <div class="text">${messageData.text}</div>
-                    </div>
-                `;
-                chatBox.appendChild(messageElement);
+                messageElement.classList.add('message', messageData.sender === senderName ? 'me' : 'friend');
+
+                // Retrieve the last seen time for the sender
+                onValue(ref(usersRef, messageData.sender), (userSnapshot) => {
+                    const userData = userSnapshot.val();
+                    const lastSeen = userData ? userData.lastSeen : "Unknown";
+
+                    messageElement.innerHTML = `
+                        <div class="avatar" style="background-image: url('${messageData.sender === "18" ? "https://i.ibb.co/kmkZjsW/Untitled-design-3.png" : "https://i.ibb.co/0s9nJzh/product-jpeg.jpg"}');"></div>
+                        <div class="message-text">
+                            <div class="name">${messageData.sender} <span class="last-seen">Last seen: ${lastSeen}</span></div>
+                            <div class="time">${messageData.time}</div>
+                            <div class="text">${messageData.text}</div>
+                        </div>
+                    `;
+                    chatBox.appendChild(messageElement);
+                });
             });
         });
     }
 
     setInterval(loadMessages, 3000); // Load messages every 3 seconds
-    // Show login screen initially
-    showLoginScreen();
+
+    // Send message functionality
+    document.getElementById("sendButton").addEventListener("click", () => {
+        const messageText = document.getElementById("messageInput").value.trim();
+        if (messageText) {
+            const currentDate = new Date();
+            const time = currentDate.toLocaleTimeString();
+            const newMessageRef = push(ref(database, 'messages'));
+            set(newMessageRef, {
+                sender: senderName,
+                text: messageText,
+                time: time
+            })
+            .then(() => {
+                document.getElementById("messageInput").value = '';
+                loadMessages();
+            });
+        }
+    });
 </script>
 </body>
 </html>
