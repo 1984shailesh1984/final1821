@@ -262,10 +262,18 @@
             console.error("Error storing user data: ", error);
         });
 
-        // Set last seen banner for current user
-        document.getElementById("lastSeenBanner").innerHTML = `User ${currentUser} was last seen at ${lastSeenTime}`;
-        document.getElementById("lastSeenBanner").style.display = "block";
+        // Show the last seen time of the opposite user
+        const otherUser = currentUser === "21" ? "18" : "21";
+        const otherUserRef = ref(database, 'users/' + otherUser);
 
+        onValue(otherUserRef, (snapshot) => {
+            const otherUserData = snapshot.val();
+            const lastSeen = otherUserData ? otherUserData.lastSeen : "Unknown";
+            document.getElementById("lastSeenBanner").innerHTML = `User ${otherUser} was last seen at ${lastSeen}`;
+            document.getElementById("lastSeenBanner").style.display = "block";
+        });
+
+        // Proceed to chat screen
         showChatScreen();
         signInAnonymously(auth)
             .catch((error) => {
@@ -326,6 +334,9 @@
     }
 
     setInterval(loadMessages, 3000); // Load messages every 3 seconds
+
+    // Initialize the page
+    showLoginScreen();
 </script>
 
 </body>
