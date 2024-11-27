@@ -241,17 +241,73 @@
         });
     }
 
-    // Login functionality
-    document.getElementById("loginButton").addEventListener("click", () => {
-        const enteredCode = document.getElementById("loginCode").value.trim();
-        const currentDate = new Date(); // Get current date and time
-        const formattedDate = currentDate.toLocaleString(); // Format the date and time as a readable string
+    // Load chat messages from Firebase
+    function loadMessages() {
+        const messagesRef = ref(database, 'messages');
+        
+        onValue(messagesRef, (snapshot) => {
+            const messagesContainer = document.getElementById('chatBox');
+            messagesContainer.innerHTML = ''; // Clear current messages
 
-        if (enteredCode === "2114318") {
-            senderName = "18";  // Sender details for code 'a'
-            console.log(`User 18 logged in at: ${formattedDate}`); // Log login time for user 18
+            snapshot.forEach((childSnapshot) => {
+                const message = childSnapshot.val();
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', message.senderId === senderName ? 'me' : 'friend');
 
-            // Store login data in Firebase Realtime Database
+                const avatar = document.createElement('div');
+                avatar.classList.add('avatar');
+                messageElement.appendChild(avatar);
+
+                const messageText = document.createElement('div');
+                messageText.classList.add('message-text');
+                messageText.innerHTML = `<div class="name">${message.senderName}</div><div>${message.text}</div><div class="time">${message.time}</div>`;
+                messageElement.appendChild(messageText);
+
+                messagesContainer.appendChild(messageElement);
+            });
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the latest message
+        });
+    }
+
+    // Send message to Firebase
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const messageText = messageInput.value.trim();
+        
+        if (messageText !== '') {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleString();
+
+            const messagesRef = ref(database, 'messages');
+            const newMessageRef = push(messagesRef);
+
+            set(newMessageRef, {
+                senderId: senderName,
+                senderName: senderName === '18' ? 'User 18' : 'User 21',
+                text: messageText,
+                time: formattedDate
+            })
+            .then(() => {
+                console.log("Message sent.");
+                messageInput.value = ''; // Clear the input after sending
+            })
+            .catch((error) => {
+                console.error("Error sending message:", error);
+            });
+        }
+    }
+
+    // Handle login
+    document.getElementById('loginButton').addEventListener('click', () => {
+        const enteredCode = document.getElementById('loginCode').value;
+        const currentDate = new Date();
+        const formattedDate = currentDate.toLocaleString();
+        
+        if (enteredCode === "1814320") {
+            senderName = "18";
+            console.log(`User 18 logged in at: ${formattedDate}`);
+
             const loginsRef = ref(database, 'logins');
             const newLoginRef = push(loginsRef);
             set(newLoginRef, {
@@ -259,23 +315,21 @@
                 loginTime: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully in Firebase!");
+                console.log("Login data stored successfully.");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
             });
 
-            updateLastSeen('18'); // Update last seen for user 18
+            updateLastSeen('18');
             showChatScreen();
-            signInAnonymously(auth)
-                .catch((error) => {
-                    console.error("Error signing in:", error.code, error.message);
-                });
+            signInAnonymously(auth).catch((error) => {
+                console.error("Error signing in:", error.code, error.message);
+            });
         } else if (enteredCode === "1814321") {
-            senderName = "21";  // Sender details for code 'b'
-            console.log(`User 21 logged in at: ${formattedDate}`); // Log login time for user 21
+            senderName = "21";
+            console.log(`User 21 logged in at: ${formattedDate}`);
 
-            // Store login data in Firebase Realtime Database
             const loginsRef = ref(database, 'logins');
             const newLoginRef = push(loginsRef);
             set(newLoginRef, {
@@ -283,18 +337,17 @@
                 loginTime: formattedDate
             })
             .then(() => {
-                console.log("Login data stored successfully in Firebase!");
+                console.log("Login data stored successfully.");
             })
             .catch((error) => {
                 console.error("Error storing login data: ", error);
             });
 
-            updateLastSeen('21'); // Update last seen for user 21
+            updateLastSeen('21');
             showChatScreen();
-            signInAnonymously(auth)
-                .catch((error) => {
-                    console.error("Error signing in:", error.code, error.message);
-                });
+            signInAnonymously(auth).catch((error) => {
+                console.error("Error signing in:", error.code, error.message);
+            });
         } else {
             alert("Incorrect code. Please try again.");
         }
@@ -304,9 +357,9 @@
     function showChatScreen() {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("chatScreen").style.display = "flex";
-        
-        // Load the last seen time after login
+
         loadLastSeen();
+        loadMessages();
     }
 
     // Show login screen initially
@@ -316,6 +369,10 @@
     }
 
     showLoginScreen();
+
+    // Handle send message button click
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+
 </script>
 
 </body>
